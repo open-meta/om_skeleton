@@ -1,30 +1,8 @@
+// Thanks to Dean Attali for the shinyjs package.
 
-
-//   shinyjs.getcookie = function(params) {
-//      var cookie = Cookies.get("id");
-//      if (typeof cookie == "undefined") {
-//         var cookie = ""; }
-//      Shiny.onInputChange("jscookie", cookie);
-//   }
-
-//   shinyjs.setcookie = function(params) {
-//      Cookies.set("id", escape(params), { expires: 0.5 });
-//      Cookies.set("id", escape(params));
-//      Shiny.onInputChange("jscookie", params);
-//   }
-
-//   shinyjs.rmcookie = function(params) {
-//      Cookies.remove("id");
-//      Shiny.onInputChange("jscookie", "");
-//   }
-
-   shinyjs.redirect = function(url) {
-      window.location = url;
-   }
-
-   shinyjs.alert = function(txt) {
-      alert(txt);
-   }
+// Thanks to Calli Gross for explaining how to use shinyjs with cookies.
+// https://calligross.de/post/using-cookie-based-authentication-with-shiny/
+// https://gist.github.com/calligross/e779281b500eb93ee9e42e4d72448189
 
 // sets of functions to set, get, and remove named cookies
 //    first set, "id", is for session id (ses$id in R code)
@@ -51,4 +29,10 @@
    shinyjs.removeid = function() {
       Cookies.remove("id");
       Shiny.onInputChange("js.id", "");
+   }
+
+// Moreover, now we can do stuff like:
+
+   shinyjs.redirect = function(url) {
+      window.location = url;
    }
