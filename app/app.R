@@ -29,7 +29,8 @@ sendmail_options(smtpServer="ASPMX.L.GOOGLE.COM")  #   used to verify email addr
 site_name = "om_skeleton"                          # Displayed at upper left on all pages in this design and elsewhere
 
 ### debugging
-page_debug_on = TRUE   # if TRUE, prints each render to the console/server log
+page_debug_on = TRUE   # if TRUE, prints some debugging info to the console or server log
+
 
 
 ### Users table and data persistence
@@ -44,17 +45,17 @@ source("save-on-disk.R", local=TRUE)
 ### Page table
    # Valid file names must be hardcoded somewhere for security. In a real site you could keep this table in
    #    persistent storage and allow site adminsitrators to add pages online.
-site_pages =                   tibble(name="home",         sp=0)      # sp is for "superpowers"
-site_pages = rbind(site_pages, tibble(name="login",        sp=0))     # in terms of pages, it's the amount of user sp
-site_pages = rbind(site_pages, tibble(name="logout",       sp=0))     #    required to open the page.
-site_pages = rbind(site_pages, tibble(name="profile",      sp=0))
-site_pages = rbind(site_pages, tibble(name="lostpassword", sp=0))
-site_pages = rbind(site_pages, tibble(name="admin",        sp=500))   # only users with sp>=500 can open this page
+site_pages <-                   tibble(name="home",         sp=0)      # sp is for "superpowers"
+site_pages <- rbind(site_pages, tibble(name="login",        sp=0))     # in terms of pages, it's the amount of user sp
+site_pages <- rbind(site_pages, tibble(name="logout",       sp=0))     #    required to open the page.
+site_pages <- rbind(site_pages, tibble(name="profile",      sp=0))
+site_pages <- rbind(site_pages, tibble(name="lostpassword", sp=0))
+site_pages <- rbind(site_pages, tibble(name="admin",        sp=500))   # only users with sp>=500 can open this page
 
-pageGet = function(webpage) {
-   p = site_pages[webpage==site_pages$name,]
+pageGet <- function(webpage) {
+   p <- site_pages[webpage==site_pages$name,]
    if(nrow(p)==0) {                                # if the page doesn't exist, p will be an empty tibble,
-      p = tibble(name="", sp=0)                    #    but return a tibble with 1 row, with name blank.
+      p <- tibble(name="", sp=0)                   #    but return a tibble with 1 row, with name blank.
    }
    return(p)
 }
@@ -68,7 +69,7 @@ ttextInput <- function(inputId, label, value="", style="width: 20%;", size="", a
           Large = class <- "form-control input-lg shiny-input-container",
           class <- "form-control shiny-input-container"
           )
-   af = if(autofocus) {"autofocus"} else {""}
+   af <- if(autofocus) {"autofocus"} else {""}
    div(class="form-group",
       tags$label('for'=inputId, class="control-label", label),
       HTML(paste0('<input id="', inputId, '" label="', label, '" value="', value, '" class="', class,
@@ -76,7 +77,7 @@ ttextInput <- function(inputId, label, value="", style="width: 20%;", size="", a
    )}
 
    # Generate a long, meaningless, and unique id for the sessionid
-generate_id = function() {
+generate_id <- function() {
    dup <- TRUE
    while (dup) {                                              # try, try again until it's unique
       newID <- paste(collapse = '', sample(x = c(letters, LETTERS, 0:9), size = 16, replace = TRUE))
@@ -86,7 +87,7 @@ generate_id = function() {
 }
 
    # Generate a short, numeric-only code for email verification and lost passwords
-generate_code = function() {
+generate_code <- function() {
    return(paste(collapse = '', sample(0:9, size = 6, replace = TRUE)))    # this one doesn't need to be unique
 }
 
@@ -134,18 +135,18 @@ server <- function(input, output, session) {
 ### Plain old functions that are used by multiple pages go above the server function, so they only load once.
 ###    Reactives used by multiple pages, however, have to be inside the server function and load every session.
 
-   rv = reactiveValues()      # session reactive values
-                              # for non-reactive variables, use the session$userData environment
+   rv <- reactiveValues()      # session reactive values
+                               # for non-reactive variables, use the session$userData environment
 
-   rv$limn = 1                # render/re-render page buzzer
-   rv$cookies_baked = 0       # render menu buzzer
-   rv$logout = 0              # needed for logout.R page
-   rv$modal_warning = 0       # used with an observer below to bring up modal warning dialogs
+   rv$limn <- 1                # render/re-render page buzzer
+   rv$cookies_baked <- 0       # render menu buzzer
+   rv$logout <- 0              # needed for logout.R page
+   rv$modal_warning <- 0       # used with an observer below to bring up modal warning dialogs
 
 
       # Cookie observer to determine login status
    js$getid()                             # use javascript to get our sessionid from the user's browser using cookies
-   session$userData$sessionStart = TRUE   # Without this, the observer also runs at logout and login
+   session$userData$sessionStart <- TRUE   # Without this, the observer also runs at logout and login
 
    observeEvent(input$js.id, {            # Buzzer is a change in the cookie status
       if(session$userData$sessionStart) {                # don't run this code on login or logout; only session start
@@ -154,11 +155,11 @@ server <- function(input, output, session) {
             session$userData$user <- buildU()            # grab a blank user row
             if(page_debug_on) { cat("...cookie is blank.\n") }
          } else {
-            u = userGet("sessionid", input$js.id)
+            u <- userGet("sessionid", input$js.id)
             if(u$username != "") {                       # Already logged in
                session$userData$user <- u                # Keep the row for this user
                if(page_debug_on) {
-                  print(paste0("...user is ", session$userData$user$username))
+                  cat(paste0("...user is ", session$userData$user$username, "\n"))
                }
             } else {                                     # This shouldn't happen, but we can recover if it does
                cat(paste0("\nWARNING: browser session id ", input$js.id, " not in users table.\n\n"))
@@ -167,7 +168,7 @@ server <- function(input, output, session) {
          }
       }                                                  # This observer won't run again until there's a new session
       session$userData$sessionStart <- FALSE             # Once we have cookies settled, we can build menus
-      rv$cookies_baked = rv$cookies_baked + 1            # In a render... function this would trigger an infinite loop...
+      rv$cookies_baked <- rv$cookies_baked + 1           # In a render... function this would trigger an infinite loop...
    })                                                    #   ...but not here because observeEvent() has isolated it.
 
    # an observer to send modal warnings
@@ -178,7 +179,7 @@ server <- function(input, output, session) {
    observeEvent(rv$modal_warning, {
       if(rv$modal_warning>0) {         # skip initialization
          showModal(modalDialog(
-            title = session$userData$modal_title,
+            title = HTML("<h4>", session$userData$modal_title, "</h4>"),
             HTML(session$userData$modal_text),
             footer = modalButton("Ok")
          ))
@@ -202,19 +203,19 @@ server <- function(input, output, session) {
    #   Note that you can present various menu options based on the user's superpower level, as with the Admin menu here.
    #   Also note that the code that makes sure this doesn't run until after the cookie observer has finished, because
    #      until then, session$userData$user will be null.
-   menu1 = eventReactive(rv$cookies_baked, {
+   menu1 <- eventReactive(rv$cookies_baked, {
       if(rv$cookies_baked>0) {                                       # skip initialization run
-         if(session$userData$user$sp==0) {session$userData$user
-               d = "<a href='?login'>Login</a>"
+         if(session$userData$user$sp==0) {
+               d <- "<a href='?login'>Login</a>"
             } else {
-               d = "<a href='?profile'>Profile</a> | <a href='?logout'>Logout</a>"
+               d <- "<a href='?profile'>Profile</a> | <a href='?logout'>Logout</a>"
             }
             if(session$userData$user$sp >=500) {
-               d = paste0(d, " | <a href='?admin'>Admin</a>")
+               d <- paste0(d, " | <a href='?admin'>Admin</a>")
             }
             return(paste0("<h5 style='float: right;'><a href='?home'>Home</a> | ",
-                      "<a href='http://www.open-meta.org/'>Blog</a> | ",
-                      "<a href='https://github.com/open-meta'>GitHub</a> | ",
+                      "<a href='http://www.open-meta.org/technology/multi-page-url-based-shiny-web-site-skeleton-with-authentication/'>Blog</a> | ",
+                      "<a href='https://github.com/open-meta/om_skeleton'>GitHub</a> | ",
                        d,
                       "</h5>"))
       }
@@ -224,14 +225,14 @@ server <- function(input, output, session) {
 #     Note, this cannot be inside a reactive, because it ends by loading source code, which needs to be
 #        in the environment of the server, not inside an observer/reactive
 
-   webpage = isolate(session$clientData$url_search)     # isolate() to deal with reactive context
+   webpage <- isolate(session$clientData$url_search)    # isolate() to deal with reactive context
    if(is.null(webpage)) {                               # report if session$ wasn't ready yet...
       webpage <- "?home"                                #    ...null means issues to solve
-      print("session$clientData$url_search was null, substituting home.R")
+      cat("\nWARNING: session$clientData$url_search was null, substituting home.R\n\n")
    }
-   if(webpage=="") { webpage = "?home" }                # blank means home page
-   webpage = substr(webpage, 2, nchar(webpage))         # remove leading "?", add ".R"
-   p = pageGet(webpage)
+   if(webpage=="") { webpage <- "?home" }               # blank means home page
+   webpage <- substr(webpage, 2, nchar(webpage))        # remove leading "?", add ".R"
+   p <- pageGet(webpage)
    if(p$name != ""){                                    # is that one of our files?
       webpage <- p                                      # note that this is a tibble
    } else {
