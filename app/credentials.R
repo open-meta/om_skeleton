@@ -6,7 +6,7 @@
 ### Put your data here
 admin_email_address <- ""       # Email address and password for the
 admin_password <- ""            #    initial administrator superuser account
-site_name <- ""                  # Displayed at upper left on all pages in this design; also used in emails
+site_name <- ""                 # Displayed at upper left on all pages in this design; also used in emails
 
 ### For sending email with mailR package
 #    For details see:

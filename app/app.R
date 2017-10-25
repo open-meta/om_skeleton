@@ -6,7 +6,7 @@
 library(shiny)
 library(shinythemes)
 library(shinyBS)
-library(V8)            # Needed by shinyjs
+library(V8)            # Needed by shinyjs; allows server to run javascript
 library(shinyjs)
 library(stringr)
 library(dplyr)
@@ -186,7 +186,7 @@ server <- function(input, output, session) {
    # session$userData$modal_text <- ""   embedded HTML is ok
    # rv$modal_warning <- rv$modal_warning + 1
    observeEvent(rv$modal_warning, {
-      if(rv$modal_warning>0) {         # skip initialization
+      if(rv$modal_warning>0) {                           # skip initialization
          showModal(modalDialog(
             title = HTML("<h4>", session$userData$modal_title, "</h4>"),
             HTML(session$userData$modal_text),
@@ -202,7 +202,7 @@ server <- function(input, output, session) {
             HTML("<h5>", site_name, "</h5>")
          ),
          column(8,
-            HTML(menu1())
+            HTML(topmenu())
          )
       ),
       uiOutput("pageStub")
@@ -212,8 +212,8 @@ server <- function(input, output, session) {
    #   Note that you can present various menu options based on the user's superpower level, as with the Admin menu here.
    #   Also note that the code that makes sure this doesn't run until after the cookie observer has finished, because
    #      until then, session$userData$user will be null.
-   menu1 <- eventReactive(rv$cookies_baked, {
-      if(rv$cookies_baked>0) {                                       # skip initialization run
+   topmenu <- eventReactive(rv$cookies_baked, {
+      if(rv$cookies_baked>0) {                           # skip initialization run
          if(session$userData$user$sp==0) {
                d <- "<a href='?login'>Login</a>"
             } else {
@@ -234,18 +234,18 @@ server <- function(input, output, session) {
 #     Note, this cannot be inside a reactive, because it ends by loading source code, which needs to be
 #        in the environment of the server, not inside an observer/reactive
 
-   webpage <- isolate(session$clientData$url_search)    # isolate() to deal with reactive context
-   if(is.null(webpage)) {                               # report if session$ wasn't ready yet...
-      webpage <- "?home"                                #    ...null means issues to solve
+   webpage <- isolate(session$clientData$url_search)     # isolate() to deal with reactive context
+   if(is.null(webpage)) {                                # report if session$ wasn't ready yet...
+      webpage <- "?home"                                 #    ...null means issues to solve
       cat("\nWARNING: session$clientData$url_search was null, substituting home.R\n\n")
    }
-   if(webpage=="") { webpage <- "?home" }               # blank means home page
-   webpage <- substr(webpage, 2, nchar(webpage))        # remove leading "?", add ".R"
+   if(webpage=="") { webpage <- "?home" }                # blank means home page
+   webpage <- substr(webpage, 2, nchar(webpage))         # remove leading "?", add ".R"
    p <- pageGet(webpage)
-   if(p$name != ""){                                    # is that one of our files?
-      webpage <- p                                      # note that this is a tibble
+   if(p$name != ""){                                     # is that one of our files?
+      webpage <- p                                       # note that this is a tibble
    } else {
-      output$pageStub <- renderUI(                      # 404 if no file with that name
+      output$pageStub <- renderUI(                       # 404 if no file with that name
          fluidRow(
             column(5,
                HTML("<h2>404 Not Found Error:</h2><p>That URL doesn't exist. Use the",
@@ -253,10 +253,10 @@ server <- function(input, output, session) {
             )
          )
       )
-      return()                                          # prevents a "file not found" error on
-   }                                                    #    the next line after a 404 error
-   source(paste0(webpage$name, ".R"), local=TRUE)                     # load and run server code for this page
-} # end of server                                       #    in the server environment
+      return()                                           # prevents a "file not found" error on
+   }                                                     #    the next line after a 404 error
+   source(paste0(webpage$name, ".R"), local=TRUE)        # load and run server code for this page
+} # end of server                                        #    in the server environment
 
 # Run the application
 shinyApp(ui = ui, server = server)
