@@ -25,11 +25,11 @@ output$pageStub <- renderUI({rv$limn; isolate({
       if(session$userData$user$sp && !session$userData$user$emailverified) {
          session$userData$tempcode <- generate_code()
          if(session$userData$fixingemail) {           # if email is already verified, user is changing email address
-            sendmail(paste0("<", sendmail_from, ">"), paste0("<", session$userData$user$email, ">"),
+            send.email(session$userData$user$username, session$userData$user$email,
                paste0("Code to verify your ", site_name," account."),
                paste0("Here's the code you must enter to change your ", site_name," email address: ", session$userData$tempcode))
          } else {                                     #    otherwise user is verifing email address for a new account
-            sendmail(paste0("<", sendmail_from, ">"), paste0("<", session$userData$user$email, ">"),
+            send.email(session$userData$user$username, session$userData$user$email,
                paste0("Code to verify your new ", site_name," account."),
                paste0("Here's the code you must enter to complete your ", site_name," registration: ", session$userData$tempcode))
          }

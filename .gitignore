@@ -36,3 +36,6 @@ vignettes/*.pdf
 
 # App files that shouldn't be uploaded
 app/users-table.R
+app/credentials.R
+app on 171023/
+app/rsconnect

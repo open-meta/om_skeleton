@@ -10,28 +10,52 @@ library(V8)            # Needed by shinyjs
 library(shinyjs)
 library(stringr)
 library(dplyr)
-#library(tibble)
-#library(purrr)
-#library(magrittr)
 library(lubridate)
-#library(rmarkdown)
-#library(ggplot2)
-#library(xml2)
 library(bcrypt)        # 2 commands, hashpw("password") and checkpw("password", hash)
-library(sendmailR)     # remove if you choose to use a different email library
+library(mailR)
 
 ### initializations
+
+# Load the variables in credentials.R
+#    This file should have email and MySQL users and passwords
+#    DO NOT put the credentials file on GitHub!
+
+source("credentials.R", local=TRUE)
+
+# For sending email the credentials file should include these five variables:
+#    For details see:
+#    http://www.open-meta.org/technology/how-to-send-email-from-r-with-the-help-of-amazon-ses-and-mailr/
+#
+#  Smtp.Username <- ""
+#  Smtp.Password <- ""
+#  Smtp.Server <- ""
+#  Smtp.Port <- ""
+#  Smtp.From <- ""
+
+# This function uses the mailR package and Smtp variables from credentials
+send.email <- function(to.name, to.adr, subject, message,
+                       replyto.name="", replyto.adr=Smtp.From, email.from=Smtp.From) {
+   send.mail(from = email.from,
+      to = paste0(to.name, " <", to.adr, ">"),
+      replyTo = paste0(replyto.name, " <", replyto.adr, ">"),
+      subject = subject,
+      body = message,
+      smtp = list(host.name = Smtp.Server,
+                  port = Smtp.Port,
+                  user.name = Smtp.Username,
+                  passwd = Smtp.Password,
+                  ssl = TRUE),
+      authenticate = TRUE,
+      send = TRUE)
+}
+
 ### PUT YOUR OWN DATA IN THESE
 admin_email_address <- "example@example.com"       # These are ued to set up the initial
 admin_password <- "default"                        #   administrator superuser account
-sendmail_from <-"example@example.com"              # Needed by sendmailR, which is
-sendmail_options(smtpServer="ASPMX.L.GOOGLE.COM")  #   used to verify email addresses
 site_name = "om_skeleton"                          # Displayed at upper left on all pages in this design and elsewhere
 
 ### debugging
 page_debug_on = TRUE   # if TRUE, prints some debugging info to the console or server log
-
-
 
 ### Users table and data persistence
 ###    There are a variety of ways to make data persistent. Saving it to disk is the least reliable, because
@@ -144,11 +168,11 @@ server <- function(input, output, session) {
    rv$modal_warning <- 0       # used with an observer below to bring up modal warning dialogs
 
 
-      # Cookie observer to determine login status
-   js$getid()                             # use javascript to get our sessionid from the user's browser using cookies
+   # Cookie observer to determine login status
+   js$getid()                              # use javascript to get our sessionid from the user's browser using cookies
    session$userData$sessionStart <- TRUE   # Without this, the observer also runs at logout and login
 
-   observeEvent(input$js.id, {            # Buzzer is a change in the cookie status
+   observeEvent(input$js.id, {             # Buzzer is a change in the cookie status
       if(session$userData$sessionStart) {                # don't run this code on login or logout; only session start
          if(page_debug_on) { cat("Checking cookies...\n")}
          if(input$js.id=="") {                           # not logged in;
@@ -215,7 +239,7 @@ server <- function(input, output, session) {
             }
             return(paste0("<h5 style='float: right;'><a href='?home'>Home</a> | ",
                       "<a href='http://www.open-meta.org/technology/multi-page-url-based-shiny-web-site-skeleton-with-authentication/'>Blog</a> | ",
-                      "<a href='https://github.com/open-meta/om_skeleton'>GitHub</a> | ",
+                      "<a href='https://github.com/open-meta/om_skeleton/tree/master/app'>GitHub</a> | ",
                        d,
                       "</h5>"))
       }

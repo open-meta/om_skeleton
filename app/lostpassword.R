@@ -25,7 +25,7 @@ output$pageStub <- renderUI({rv$limn; isolate({
       }                                              # step 2, and send and receive code
       if(!session$userData$codematch && session$userData$userexists) {
          session$userData$tempcode <- generate_code()
-         sendmail(paste0("<", sendmail_from, ">"), paste0("<", session$userData$user$email, ">"),
+         send.email(session$userData$user$username, session$userData$user$email,
                paste0("Code to verify your ", site_name," account."),
                paste0("Here's the code you must enter to reset your ", site_name," password: ", session$userData$tempcode))
          return(tagList(

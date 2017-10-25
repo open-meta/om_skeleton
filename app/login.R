@@ -2,23 +2,24 @@
 ### Tom Weishaar - Oct 2017 - v0.1
 ### Skeleton for multi-page, multi-user web site in Shiny, with user authentication
 
-output$pageStub <- renderUI({rv$limn; isolate({
+output$pageStub <- renderUI({
+   x = rv$limn
    if(page_debug_on) {
       cat(paste0("Rendering ", webpage$name, " v.", rv$limn, "\n"))
    }
-   if(session$userData$user$sp) {         # A User superpower of 1 or more (TRUE) means a user is logged in
-      return(tagList(                     #    Menus should not lead here if logged in; but still possible via URL
+   if(session$userData$user$sp) {         # User superpower of 1 or more (TRUE) means a user is logged in
+      tagList(                            # Menus should not lead here if logged in; but still possible via URL
          HTML(paste0("<p>You are logged in, ", session$userData$user$username, "</p>")),
          actionButton("logout_btn", "Logout", class="btn-primary btn-sm", style="margin:.8em;")
-      ))
+      )
    } else {                               # Otherwise, show login page
-      return(tagList(
+      tagList(
          fluidRow(
             column(4, offset=4,
                fluidRow(
                   column(12,
                      ttextInput("username", "User Name", value="", style="width: 100%;", autofocus=TRUE),
-                     passwordInput("password", "Password:", value="")
+                     passwordInput("password", "Password:", value = "")
                   ),
                   column(6,
                      HTML('<h5><a href="?profile">Register</a></h5>',
@@ -31,14 +32,13 @@ output$pageStub <- renderUI({rv$limn; isolate({
                )
             )
          )
-      ))
+      )
    }
-})})
-
+})
 
 observeEvent(input$login_btn, {
-   errormsg <- ""
-   u <- userGet("username", input$username)
+   errormsg = ""
+   u = userGet("username", input$username)
    if(u$username != "") {                                  # valid username?
       if(checkpw(input$password, u$hashed_pw)) {           # right password?
          newID <- generate_id()                            # create a new session id
@@ -57,10 +57,10 @@ observeEvent(input$login_btn, {
          js$redirect("?home")                              # on successful login, go to home page
          }
       } else {
-         errormsg <- "Incorrect Password."
+         errormsg = "Incorrect Password."
       }
    } else {
-      errormsg <- "Unknown User Name."
+      errormsg = "Unknown User Name."
    }
    if(nchar(errormsg)>0) {
       session$userData$modal_title <- "Whoops!"
@@ -74,5 +74,5 @@ observeEvent(input$logout_btn, {
    session$userData$user$sessionid <- ""     #   and session$userData$users
    userSave(session$userData$user)           #   and om_users
    session$userData$user <- buildU()         # now clear session$userData$users
-   rv$limn <- rv$limn + 1
+   rv$limn = rv$limn + 1
 })
