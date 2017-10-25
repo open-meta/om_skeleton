@@ -18,19 +18,12 @@ library(mailR)
 
 # Load the variables in credentials.R
 #    This file should have email and MySQL users and passwords
-#    DO NOT put the credentials file on GitHub!
 
 source("credentials.R", local=TRUE)
 
-# For sending email the credentials file should include these five variables:
-#    For details see:
-#    http://www.open-meta.org/technology/how-to-send-email-from-r-with-the-help-of-amazon-ses-and-mailr/
-#
-#  Smtp.Username <- ""
-#  Smtp.Password <- ""
-#  Smtp.Server <- ""
-#  Smtp.Port <- ""
-#  Smtp.From <- ""
+# Note: to make sure this file can't be served up on your web server, you can
+#    move it into the parent folder of your server root like this:
+# source("../../credentials.R", local=TRUE) # move this file out of server root entirely
 
 # This function uses the mailR package and Smtp variables from credentials
 send.email <- function(to.name, to.adr, subject, message,
@@ -48,14 +41,6 @@ send.email <- function(to.name, to.adr, subject, message,
       authenticate = TRUE,
       send = TRUE)
 }
-
-### PUT YOUR OWN DATA IN THESE
-admin_email_address <- "example@example.com"       # These are ued to set up the initial
-admin_password <- "default"                        #   administrator superuser account
-site_name = "om_skeleton"                          # Displayed at upper left on all pages in this design and elsewhere
-
-### debugging
-page_debug_on = TRUE   # if TRUE, prints some debugging info to the console or server log
 
 ### Users table and data persistence
 ###    There are a variety of ways to make data persistent. Saving it to disk is the least reliable, because
