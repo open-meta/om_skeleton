@@ -21,8 +21,8 @@ buildU <- function() {                                                  # tibble
 # sp = user superpower level; logged out = 0; logged in > 0; A page can require a higher level to
 #    view it (see admin.R). Also see the menu1 eventReactive() for using superpowers in menu building.
 
-save_users <- function() { saveRDS(site_users, file="users-table.R") }
-load_users <- function() { readRDS(file="users-table.R") }
+save_users <- function() { saveRDS(site_users, file="users-table.RDS") }
+load_users <- function() { readRDS(file="users-table.RDS") }
 
 # An initialization function that creates the first user, who must be a superuser.
 init_users <- function() { users <- buildU()
