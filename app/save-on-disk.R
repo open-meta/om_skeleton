@@ -38,7 +38,7 @@ init_users <- function() { users <- buildU()
 }
 
 # Set up connection and figure out whether initialization is needed. If so, do it.
-if(file.exists("users-table.R")) { site_users <- load_users() } else { site_users <- init_users(); save_users() }
+if(file.exists("users-table.RDS")) { site_users <- load_users() } else { site_users <- init_users(); save_users() }
 
 # function for saving / updating a row of the user table
 userSave <- function(u) {                                       # u is an entire row for the users table; see buildU()
