@@ -4,10 +4,10 @@
 
 ### libraries
 library(shiny)
-library(shinythemes)
-library(shinyBS)
-library(V8)            # Needed by shinyjs; allows server to run javascript
-library(shinyjs)
+#library(shinythemes)
+#library(shinyBS)
+#library(V8)            # Needed by shinyjs; allows server to run javascript
+#library(shinyjs)
 library(stringr)
 library(dplyr)
 library(lubridate)
@@ -18,8 +18,10 @@ library(mailR)
 
 # Load the variables in credentials.R
 #    This file should have email and MySQL users and passwords
+#    The sample file included in the Git-Hub distribution is blank; nothing will work
+#       until you supply the missing information and move it to the app's parent directory or elsewhere.
 
-source("credentials.R", local=TRUE)
+source("../credentials.R", local=TRUE)
 
 # Note: to make sure this file can't be served up on your web server, you can
 #    move it into the parent folder of your server root like this:
@@ -105,26 +107,34 @@ generate_code <- function() {
 ###    of the ui is attached to by (possibly nested) render functions inside the server function.
 ui <- fluidPage(
    title=site_name,
-   theme=shinytheme("readable"),
    tagList(
       tags$head(
          tags$script(src="js.cookie.js"),
-            # These tags control the look of the progress bar
-         tags$style(HTML('
-            .shiny-notification {
-            width: 200%;
-            height: 100px;
-            margin-left: -400px;
-            }
-            .shiny-progress-notification .progress {
-            margin-top: 20px;
-            height: 25px;
-            width: 90%;
-            }'))
-      ),
-      useShinyjs(),                        # using Shiny javascript package
-      extendShinyjs("www/shinyjs.js"),     #   point to our javascript code
+         tags$script(HTML("
+Shiny.addCustomMessageHandler('redirect', function(url) {
+   window.location = url;
+});
+
+Shiny.addCustomMessageHandler('setCookie', function(pList) {
+   if(pList.days>0) {
+      Cookies.set(pList.cookieType, escape(pList.cookie), { expires: pList.days });
+   } else {
+      Cookies.set(pList.cookieType, escape(pList.cookie));
+   }
+});
+
+Shiny.addCustomMessageHandler('getCookie', function(pList) {
+   var cookie = Cookies.get(pList.cookieType);
+   if (typeof cookie == 'undefined') { cookie = ''; }
+   Shiny.onInputChange('js.'.concat(pList.cookieType), cookie);
+});
+
+Shiny.addCustomMessageHandler('removeCookie', function(pList) {
+   Cookies.remove(pList.cookieType);
+});
+")),
       uiOutput("uiStub")                   # the actual page will get attached here
+      )
    )
 )
 
@@ -153,25 +163,53 @@ server <- function(input, output, session) {
    rv$modal_warning <- 0       # used with an observer below to bring up modal warning dialogs
 
 
-   # Cookie observer to determine login status
-   js$getid()                              # use javascript to get our sessionid from the user's browser using cookies
-   session$userData$sessionStart <- TRUE   # Without this, the observer also runs at logout and login
+# Functions for running javascript on the browser
+#   Because these communicate using the session object, they have to be in the server.
+#   In general, the first parameter is the name of the function and the second is a list of named parameters
+#   The javascript code is loaded by the UI
+#   All these functions are stored in the js$ global
+   js = list()
 
-   observeEvent(input$js.id, {             # Buzzer is a change in the cookie status
+   js$redirect = function(url) {
+      session$sendCustomMessage("redirect", url)  # This one expects a string, not a list
+   }
+
+   js$setCookie = function(cookieType, cookie, daysTillExpire=0) {
+      session$sendCustomMessage("setCookie", list(cookieType=cookieType, cookie=cookie, days=daysTillExpire))
+   }
+
+   js$getCookie = function(cookieType) {
+      session$sendCustomMessage("getCookie", list(cookieType=cookieType))
+   }
+
+   js$removeCookie = function(cookieType) {
+      session$sendCustomMessage("removeCookie", list(cookieType=cookieType))
+   }
+
+### All the action starts here! ###
+
+   # Wait until javascript files have finished loading before asking for cookie
+   observeEvent(session$clientData$url_port, {  # This is just a hack, but now it's safe
+      js$getCookie("sessionID")                 #    to request the sessionID from the user's browser
+   })   # Cookie observer to determine login status
+
+   session$userData$sessionStart <- TRUE        # Without this, the observer also runs at logout and login
+
+   observeEvent(input$js.sessionID, {           # Buzzer is a change in the cookie status
       if(session$userData$sessionStart) {                # don't run this code on login or logout; only session start
          if(page_debug_on) { cat("Checking cookies...\n")}
-         if(input$js.id=="") {                           # not logged in;
+         if(input$js.sessionID=="") {                    # not logged in;
             session$userData$user <- buildU()            # grab a blank user row
             if(page_debug_on) { cat("...cookie is blank.\n") }
          } else {
-            u <- userGet("sessionid", input$js.id)
+            u <- userGet("sessionid", input$js.sessionID)
             if(u$username != "") {                       # Already logged in
                session$userData$user <- u                # Keep the row for this user
                if(page_debug_on) {
                   cat(paste0("...user is ", session$userData$user$username, "\n"))
                }
             } else {                                     # This shouldn't happen, but we can recover if it does
-               cat(paste0("\nWARNING: browser session id ", input$js.id, " not in users table.\n\n"))
+               cat(paste0("\nWARNING: browser session id ", input$js.sessionID, " not in users table.\n\n"))
                session$userData$user <- buildU()
             }
          }

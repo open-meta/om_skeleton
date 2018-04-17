@@ -14,7 +14,7 @@ output$pageStub <- renderUI({
 
 observeEvent(rv$logout, {
    if(rv$logout>0) {                            # Don't run if zero (initial run)
-      js$removeid()                             # delete session id from browser...
+      js$removeCookie("sessionID")              # delete session id from browser...
       session$userData$user$sessionid <- ""     #   and session$userData$users
       userSave(session$userData$user)           #   and users table
       session$userData$user <- buildU()         # now clear session$userData$users

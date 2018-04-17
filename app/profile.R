@@ -165,7 +165,7 @@ observeEvent(input$ok_btn, {
    wrongcode <- 0                                           # counter to limit code guessing
    if(input$tempcode == session$userData$tempcode) {        # If the codes match, save user and login
       newID <- generate_id()                                # create a new session id
-      js$setid(id=newID, days=0)                            # set cookie
+      js$setCookie("sessionID", newID, days=0)              # set cookie
       session$userData$user$sessionid <- newID              # set sessionid in user
       session$userData$user$lastlogin_date <- now()         # set login date
       session$userData$user$emailverified <- TRUE           # set emailverified

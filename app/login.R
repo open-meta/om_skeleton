@@ -43,9 +43,9 @@ observeEvent(input$login_btn, {
       if(checkpw(input$password, u$hashed_pw)) {           # right password?
          newID <- generate_id()                            # create a new session id
          if(input$stayloggedin) {                          # save ID to user's browser
-            js$setid(id=newID, days=14)                        # expire after 14 days
+            js$setCookie("sessionID", newID, days=14)        # expire after 14 days
          } else {
-            js$setid(id=newID, days=0)                         # expire after session
+            js$setCookie("sessionID", newID, days=0)         # expire after 0 days
          }
          session$userData$user <- u
          session$userData$user$sessionid <- newID          # update sessionid
@@ -70,9 +70,9 @@ observeEvent(input$login_btn, {
 })
 
 observeEvent(input$logout_btn, {
-   js$removeid()                             # delete session id from browser...
-   session$userData$user$sessionid <- ""     #   and session$userData$users
-   userSave(session$userData$user)           #   and om_users
-   session$userData$user <- buildU()         # now clear session$userData$users
+   js$removeCookie("sessionID")                            # delete session id from browser...
+   session$userData$user$sessionid <- ""                   #   and session$userData$users
+   userSave(session$userData$user)                         #   and om_users
+   session$userData$user <- buildU()                       # now clear session$userData$users
    rv$limn = rv$limn + 1
 })

@@ -119,7 +119,7 @@ observeEvent(input$submitPW_btn, {                   # make sure the password is
       rv$modal_warning <- rv$modal_warning + 1
    } else {
       newID <- generate_id()                                       # create a new session id
-      js$setid(id=newID, days=0)                                   # set cookie
+      js$setCookie("sessionID", newID, days=0)                     # set cookie
       session$userData$user$hashed_pw <- hashpw(input$password1)   # set password; already have username and email
       session$userData$user$sessionid <- newID                     # set sessionid in user
       session$userData$user$lastlogin_date <- now()                # set login date
