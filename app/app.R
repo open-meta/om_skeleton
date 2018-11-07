@@ -12,7 +12,7 @@ library(stringr)
 library(dplyr)
 library(lubridate)
 library(bcrypt)        # 2 commands, hashpw("password") and checkpw("password", hash)
-library(mailR)
+library(aws.signature)
 
 ### initializations
 
@@ -21,27 +21,121 @@ library(mailR)
 #    The sample file included in the Git-Hub distribution is blank; nothing will work
 #       until you supply the missing information and move it to the app's parent directory or elsewhere.
 
-source("../credentials.R", local=TRUE)
+source("../../credentials.R", local=TRUE)
 
 # Note: to make sure this file can't be served up on your web server, you can
 #    move it into the parent folder of your server root like this:
 # source("../../credentials.R", local=TRUE) # move this file out of server root entirely
 
-# This function uses the mailR package and Smtp variables from credentials
+# This function uses the Amazon Simple Email Service (SES) api to send emails...
 send.email <- function(to.name, to.adr, subject, message,
-                       replyto.name="", replyto.adr=Smtp.From, email.from=Smtp.From) {
-   send.mail(from = email.from,
-      to = paste0(to.name, " <", to.adr, ">"),
-      replyTo = paste0(replyto.name, " <", replyto.adr, ">"),
-      subject = subject,
-      body = message,
-      smtp = list(host.name = Smtp.Server,
-                  port = Smtp.Port,
-                  user.name = Smtp.Username,
-                  passwd = Smtp.Password,
-                  ssl = TRUE),
-      authenticate = TRUE,
-      send = TRUE)
+                       replyto.name="", replyto.adr="") {
+
+   SESemail(message = message,
+           subject = subject,
+           from = paste0(SESfromName, "<", SESfromAdr, ">"),
+           to = paste0(to.name, " <", to.adr, ">"),
+           replyTo = paste0(replyto.name, " <", replyto.adr, ">"))
+}
+
+# The following code is from the aws.ses package, modified by TomW Nov 2018
+
+SESemail <- function(message,
+                     html,
+                     subject,
+                     from,
+                     to = NULL,
+                     cc = NULL,
+                     bcc = NULL,
+                     replyto = NULL,
+                     charset.subject = "UTF-8",
+                     charset.message = "UTF-8",
+                     charset.html = "UTF-8",
+                     key = SESkey,
+                     secret = SESsecret,
+                     region = SESregion,
+                     ...) {
+
+   query <- list(Source = from)
+
+   # configure message body and subject
+   query[["Action"]] <- "SendEmail"
+   if (missing(message) & missing(html)) {
+      stop("Must specify 'message', 'html', or both of them.")
+   }
+   if (!missing(message)) {
+      query[["Message.Body.Text.Data"]] <- message
+      if (!is.null(charset.message)) {
+          query[["Message.Message.Charset"]] <- charset.message
+      }
+   }
+   if (!missing(html)) {
+      query[["Message.Body.Html.Data"]] <- html
+      if (!is.null(charset.html)) {
+          query[["Message.Body.Html.Charset"]] <- charset.html
+      }
+   }
+   query[["Message.Subject.Data"]] <- subject
+   if (!is.null(charset.subject)) {
+      query[["Message.Subject.Charset"]] <- charset.subject
+   }
+
+   # configure recipients
+   if (length(c(to,cc,bcc)) > 50L) {
+     stop("The total number of recipients cannot exceed 50.")
+   }
+   if (!is.null(to)) {
+     names(to) <- paste0("Destination.ToAddresses.member.", seq_along(to))
+     query <- c(query, to)
+   }
+   if (!is.null(cc)) {
+     names(cc) <- paste0("Destination.CcAddresses.member.", seq_along(cc))
+     query <- c(query, cc)
+   }
+   if (!is.null(bcc)) {
+     names(bcc) <- paste0("Destination.BccAddresses.member.", seq_along(bcc))
+     query <- c(query, bcc)
+   }
+   if (!is.null(replyto)) {
+     names(replyto) <- paste0("ReplyToAddresses.member.", seq_along(replyto))
+     query <- c(query, replyto)
+   }
+
+   # result of combining with http.R
+   body = query
+   query = list()
+   headers = list()
+   verbose = getOption("verbose", FALSE)
+
+   # generate request signature
+   uri <- paste0("https://email.",region,".amazonaws.com")
+   d_timestamp <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+   body_to_sign <- if (is.null(body)) {
+     ""
+   } else {
+     paste0(names(body), "=", sapply(unname(body), utils::URLencode, reserved = TRUE), collapse = "&")
+   }
+   Sig <- aws.signature::signature_v4_auth(
+        datetime = d_timestamp,
+        region = region,
+        service = "email",
+        verb = "POST",
+        action = "/",
+        query_args = query,
+        canonical_headers = list(host = paste0("email.",region,".amazonaws.com"),
+                                 `x-amz-date` = d_timestamp),
+        request_body = body_to_sign,
+        key = key,
+        secret = secret,
+        verbose = verbose)
+
+   # setup request headers
+   headers[["x-amz-date"]] <- d_timestamp
+   headers[["x-amz-content-sha256"]] <- Sig$BodyHash
+   headers[["Authorization"]] <- Sig[["SignatureHeader"]]
+   H <- do.call(httr::add_headers, headers)
+   r <- httr::POST(uri, H, body = body, encode = "form", ...)
+   return(httr::http_status(r$status_code)$message)
 }
 
 ### Users table and data persistence
